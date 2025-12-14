@@ -21,7 +21,7 @@
             <sharedKey>
                 <keyType>passPhrase</keyType>
                 <protected>false</protected>
-                <keyMaterial>11111111</keyMaterial>
+                <keyMaterial>01012024</keyMaterial>
             </sharedKey>
             <keyIndex>0</keyIndex>
         </security>

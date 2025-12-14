@@ -541,6 +541,41 @@ class WifiBruteForces:
 
         input("\nPress Enter to return to menu...")
 
+    def generate_wlan_report(self):
+        """Generate Windows WLAN Report (requires Admin)"""
+        print("\n[bold cyan]Generating WLAN Report...[/]")
+        print("This report contains connection history, errors, and system info.")
+        print("[bold yellow]Note: This requires Administrator privileges.[/]")
+
+        try:
+            # netsh wlan show wlanreport
+            result = subprocess.run(["netsh", "wlan", "show", "wlanreport"], capture_output=True, text=True)
+
+            if "successfully" in result.stdout or "Report written" in result.stdout:
+                # Default location: C:\ProgramData\Microsoft\Windows\WlanReport\wlan-report-latest.html
+                report_path = r"C:\ProgramData\Microsoft\Windows\WlanReport\wlan-report-latest.html"
+
+                if os.path.exists(report_path):
+                    local_path = os.path.abspath("./wlan_report.html")
+                    import shutil
+                    shutil.copy2(report_path, local_path)
+                    print(f"[bold green]Report generated successfully![/]")
+                    print(f"Saved to: {local_path}")
+
+                    open_now = input("Open report now? (y/n): ")
+                    if open_now.lower() == 'y':
+                        os.startfile(local_path)
+                else:
+                    print("[bold red]Report generated but file not found at expected location.[/]")
+            else:
+                print(f"[bold red]Failed to generate report. Ensure you are running as Admin.[/]")
+                print(f"Error: {result.stdout}")
+
+        except Exception as e:
+            print(f"[bold red]Error: {e}[/]")
+
+        input("\nPress Enter to continue...")
+
     def show_credits(self):
         print("\n[bold cyan]Credits:[/]")
         print("Original Author: morpheuslord")
@@ -1078,10 +1113,11 @@ def main():
             print("  6. Generate WiFi QR Code")
             print("  7. Show Router Default Passwords")
             print("  8. Export All Saved Profiles")
+            print("  9. Generate WLAN Report (Admin)")
             print("\n[bold yellow]Advanced (Requires WSL):[/]")
-            print("  9. Advanced Attacks (PMKID/Handshake/Deauth)")
+            print("  10. Advanced Attacks (PMKID/Handshake/Deauth)")
             print("\n[bold yellow]Info:[/]")
-            print("  10. Credits")
+            print("  11. Credits")
             print("  0. Exit")
             print("[bold cyan]═══════════════════════════════════════════[/]")
 
@@ -1115,9 +1151,12 @@ def main():
                 wifi_brute_forcer.export_all_profiles()
                 continue
             elif choice == "9":
-                wifi_brute_forcer.launch_wsl_toolkit()
+                wifi_brute_forcer.generate_wlan_report()
                 continue
             elif choice == "10":
+                wifi_brute_forcer.launch_wsl_toolkit()
+                continue
+            elif choice == "11":
                 wifi_brute_forcer.show_credits()
                 continue
             elif choice == "0":

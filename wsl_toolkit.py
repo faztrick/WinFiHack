@@ -224,6 +224,75 @@ def pmkid_attack(interface):
         print(f"{Colors.BLUE}[*] To crack: hcxpcapngtool -o hash.hc22000 -E essidlist {pcapng_file}{Colors.ENDC}")
         print(f"{Colors.BLUE}[*] Then run hashcat -m 22000 hash.hc22000 wordlist.txt{Colors.ENDC}")
 
+def crack_handshake():
+    print(f"{Colors.HEADER}[ CRACK HANDSHAKE (.cap) ]{Colors.ENDC}")
+    print(f"{Colors.BLUE}[*] This uses aircrack-ng to crack a captured handshake file.{Colors.ENDC}")
+    print(f"{Colors.WARNING}[*] CPU-intensive! Works without WiFi adapter.{Colors.ENDC}")
+
+    cap_file = input(f"Enter path to .cap file: ")
+    if not os.path.exists(cap_file):
+        print(f"{Colors.FAIL}[!] File not found.{Colors.ENDC}")
+        return
+
+    wordlist = input(f"Enter path to wordlist (default: wordlists/default.txt): ")
+    if not wordlist:
+        wordlist = "wordlists/default.txt"
+
+    if not os.path.exists(wordlist):
+        print(f"{Colors.WARNING}[!] Wordlist not found. Checking common locations...{Colors.ENDC}")
+        if os.path.exists("/usr/share/wordlists/rockyou.txt"):
+            wordlist = "/usr/share/wordlists/rockyou.txt"
+            print(f"{Colors.GREEN}[+] Using rockyou.txt{Colors.ENDC}")
+        else:
+             print(f"{Colors.FAIL}[!] No wordlist found.{Colors.ENDC}")
+             return
+
+    print(f"{Colors.GREEN}[*] Starting aircrack-ng...{Colors.ENDC}")
+    try:
+        subprocess.run(["aircrack-ng", "-w", wordlist, cap_file])
+    except Exception as e:
+        print(f"{Colors.FAIL}[!] Error running aircrack-ng: {e}{Colors.ENDC}")
+
+    input(f"\n{Colors.GREEN}Press Enter to return to menu...{Colors.ENDC}")
+
+def show_compatibility_info():
+    print(f"{Colors.HEADER}[ HARDWARE COMPATIBILITY INFO ]{Colors.ENDC}")
+    print(f"{Colors.BLUE}Q: Can I use my phone instead of a USB WiFi adapter?{Colors.ENDC}")
+    print(f"{Colors.WARNING}A: Generally, NO.{Colors.ENDC}")
+    print(f"""
+    Standard Android/iOS phones cannot be used as monitor-mode WiFi adapters
+    for WSL or standard Linux tools directly over USB.
+
+    Why?
+    1. Phones present themselves as a network interface (rndis), not a raw WiFi card.
+    2. WSL/Linux sees an ethernet connection, not the WiFi radio hardware.
+    3. Monitor mode requires direct hardware control to see raw packets.
+
+    {Colors.BLUE}Q: Can I use a MiFi / Mobile Hotspot (e.g., MiFi 8800L)?{Colors.ENDC}
+    {Colors.WARNING}A: NO.{Colors.ENDC}
+    MiFi devices are routers. When connected via USB, they act as a wired network
+    card (RNDIS). The computer cannot control the MiFi's internal radio to
+    scan channels or inject packets.
+
+    {Colors.BLUE}Q: Can I change the firmware (OpenWrt / NetHunter)?{Colors.ENDC}
+    {Colors.WARNING}A: It rarely helps for this specific purpose.{Colors.ENDC}
+    - **MiFi 8800L:** Bootloaders are locked. Even with custom firmware, the USB
+      interface is designed for networking, not raw radio control.
+    - **Phones:** Installing **Kali NetHunter** allows you to run attacks *ON* the
+      phone, but it does NOT turn the phone into a USB adapter for your PC.
+      Also, most phone internal WiFi chips do not support monitor mode even
+      with NetHunter (you still need an external USB adapter for the phone).
+
+    Exceptions (Advanced):
+    - Rooted Android with a custom kernel supporting external WiFi adapters (NetHunter).
+    - Rooted Android with 'mon0' enabled internally, using TCP packet forwarding (very complex).
+
+    Recommendation:
+    - Use a supported USB WiFi Adapter (e.g., Alfa AWUS036NHA, TP-Link TL-WN722N v1).
+    - Ensure it supports 'Monitor Mode' and 'Packet Injection'.
+    """)
+    input(f"\n{Colors.GREEN}Press Enter to return to menu...{Colors.ENDC}")
+
 def main():
     os.system('clear')
     print_banner()
@@ -270,7 +339,9 @@ def main():
         print("2. Deauthentication Attack (Disconnect clients)")
         print("3. Capture Handshake (WPA/WPA2)")
         print("4. PMKID Attack (Client-less)")
-        print("5. Download/Update Extra Tools (Freeway, PMKIDCracker, etc.)")
+        print("5. Crack Handshake (.cap file) - [Offline]")
+        print("6. Download/Update Extra Tools (Freeway, PMKIDCracker, etc.)")
+        print("7. Hardware Compatibility Info (Phone vs USB)")
         print("0. Exit")
 
         choice = input(f"\n{Colors.GREEN}Select Option: {Colors.ENDC}")
@@ -310,7 +381,13 @@ def main():
             pmkid_attack(selected_iface)
 
         elif choice == '5':
+            crack_handshake()
+
+        elif choice == '6':
             install_github_tools()
+
+        elif choice == '7':
+            show_compatibility_info()
 
         elif choice == '0':
             break
