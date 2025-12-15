@@ -858,19 +858,31 @@ class WifiBruteForces:
     def connect_wifi_and_verify_with_interface(self):
         try:
             # Add the Wi-Fi profile
-            add_profile_cmd = f'netsh wlan add profile filename="{self.xml_path}" interface="{self.interface}"'
-            subprocess.run(add_profile_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # OPTIMIZATION: Use list args instead of shell=True for speed (avoids cmd.exe spawn)
+            subprocess.run(
+                ["netsh", "wlan", "add", "profile", f"filename={self.xml_path}", f"interface={self.interface}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
             # Connect to the Wi-Fi network
-            connect_cmd = f'netsh wlan connect name="{self.target_id}" interface="{self.interface}"'
-            subprocess.run(connect_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                ["netsh", "wlan", "connect", f"name={self.target_id}", f"interface={self.interface}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
             # Wait for the connection to establish (Polling optimization)
-            # Check every 0.5s, up to 4 seconds
-            for _ in range(8):
-                sleep(0.5)
-                check_cmd = f'netsh wlan show interface name="{self.interface}"'
-                result = subprocess.run(check_cmd, shell=True, capture_output=True, text=True)
+            # Check every 0.25s, up to 3 seconds (12 checks)
+            # Fast polling allows catching successful connections earlier
+            for _ in range(12):
+                sleep(0.25)
+                # Use list args for check command too
+                result = subprocess.run(
+                    ["netsh", "wlan", "show", "interface", f"name={self.interface}"],
+                    capture_output=True,
+                    text=True
+                )
 
                 # If connected, return immediately
                 if f"SSID                   : {self.target_id}" in result.stdout:
